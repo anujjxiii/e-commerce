@@ -18,6 +18,36 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { randomUUID, createHmac } = require('crypto');
 const Razorpay = require('razorpay');
+const { Resend } = require('resend');
+const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
+
+const sendOrderEmail = async (email, orderRef, amount) => {
+  if (!resend) {
+    console.log('Resend API key missing. Email not sent.');
+    return;
+  }
+  try {
+    await resend.emails.send({
+      from: 'Aura Store <onboarding@resend.dev>',
+      to: email,
+      subject: `Order Confirmed! #${orderRef}`,
+      html: `
+        <div style="font-family: sans-serif; padding: 20px; border: 1px solid #eee; border-radius: 10px;">
+          <h1 style="color: #e11b23;">AURA STORE</h1>
+          <h2>Thank you for your order!</h2>
+          <p>We've received your payment of <strong>INR ${amount}</strong>.</p>
+          <p>Order Reference: <strong>${orderRef}</strong></p>
+          <p>Your premium streetwear will be shipped shortly.</p>
+          <hr />
+          <p style="font-size: 12px; color: #666;">This is an automated confirmation email.</p>
+        </div>
+      `
+    });
+    console.log(`Email sent successfully to ${email}`);
+  } catch (error) {
+    console.error('Email sending failed:', error);
+  }
+};
 console.log("All modules required successfully.");
 
 const { all, get, initDatabase, run } = require('./database');
@@ -548,10 +578,12 @@ app.post('/api/payments', requireAuth, asyncHandler(async (req, res) => {
     CONTENT: Thank you for shopping with AURA STORE. 
     Your order for INR ${normalized.amount || req.body.amount} was received.
     Status: ${status}
-    =========================================
-  `);
+    // Send Order Email
+    if (req.user && req.user.email) {
+      sendOrderEmail(req.user.email, reference, normalized.amount || req.body.amount);
+    }
 
-  res.status(201).json({
+    res.status(201).json({
     payment: {
       id: paymentId,
       amount: normalized.amount,
