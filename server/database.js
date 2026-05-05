@@ -171,6 +171,7 @@ async function resetProductsTable() {
       description TEXT NOT NULL,
       category TEXT NOT NULL,
       gender TEXT NOT NULL CHECK (gender IN ('Men', 'Women')),
+      stock INTEGER DEFAULT 10,
       created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
     )
   `);
@@ -203,10 +204,32 @@ async function createPaymentsTable() {
       provider TEXT NOT NULL DEFAULT 'demo',
       reference TEXT NOT NULL UNIQUE,
       metadata TEXT,
+      status_track TEXT DEFAULT 'processing',
       created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
     )
   `);
+  
+  // Ensure status_track exists if table already existed
+  try {
+    await run('ALTER TABLE payments ADD COLUMN IF NOT EXISTS status_track TEXT DEFAULT \'processing\'');
+  } catch (err) {
+    // Ignore if column already exists
+  }
+
   await run('CREATE INDEX IF NOT EXISTS idx_payments_user_id ON payments(user_id)');
+}
+
+async function createCouponsTable() {
+  await run(`
+    CREATE TABLE IF NOT EXISTS coupons (
+      id SERIAL PRIMARY KEY,
+      code TEXT UNIQUE NOT NULL,
+      discount_type TEXT NOT NULL,
+      discount_value INTEGER NOT NULL,
+      active BOOLEAN DEFAULT TRUE,
+      created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
 }
 
 let initPromise;
@@ -218,6 +241,7 @@ async function initializeDatabase() {
     await createUsersTable();
     await resetProductsTable();
     await createPaymentsTable();
+    await createCouponsTable();
     await client.query('COMMIT');
   } catch (err) {
     await client.query('ROLLBACK').catch(() => {});
