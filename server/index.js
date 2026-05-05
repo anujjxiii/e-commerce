@@ -574,6 +574,11 @@ app.post('/api/payments', requireAuth, asyncHandler(async (req, res) => {
         metadata: metadata || {},
       },
     });
+
+    // Send Order Email
+    if (req.auth && req.auth.email) {
+      sendOrderEmail(req.auth.email, reference, amount);
+    }
     return;
   }
   
@@ -603,20 +608,9 @@ app.post('/api/payments', requireAuth, asyncHandler(async (req, res) => {
     ],
   );
 
-  // Mock Email Notification for both Online and COD
-  console.log(`
-    =========================================
-    MOCK EMAIL SENT TO: ${req.user?.email || 'Customer'}
-    SUBJECT: Order Confirmed! Reference: ${reference}
-    CONTENT: Thank you for shopping with AURA STORE. 
-    Your order for INR ${normalized.amount || req.body.amount} was received.
-    Status: ${status}
-    =========================================
-  `);
-
   // Send Order Email
-  if (req.user && req.user.email) {
-    sendOrderEmail(req.user.email, reference, normalized.amount || req.body.amount);
+  if (req.auth && req.auth.email) {
+    sendOrderEmail(req.auth.email, reference, normalized.amount || req.body.amount);
   }
 
   res.status(201).json({
