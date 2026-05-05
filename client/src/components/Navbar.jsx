@@ -133,9 +133,9 @@ const Navbar = () => {
 
           {/* Desktop Search Bar - Hidden on Mobile */}
           <form onSubmit={handleSearchSubmit} className={`search-pill ${isSearchFocused ? 'focused' : ''}`} style={{ background: 'var(--ss-light-grey)' }}>
-            <button type="submit" className="icon-button-plain" style={{ padding: 0 }}>
+            <div style={{ display: 'flex', alignItems: 'center', paddingLeft: '5px' }}>
               <Search size={18} color={isSearchFocused ? "var(--text-primary)" : "#888"} />
-            </button>
+            </div>
             <input
               type="text"
               name="global_search"
@@ -227,15 +227,13 @@ const Navbar = () => {
 
         {/* Search in Mobile Menu - Moved to bottom */}
         <form onSubmit={handleSearchSubmit} className="search-pill" style={{ display: 'flex', marginTop: 'auto', padding: '12px 24px', flex: 'none', width: '100%', minWidth: 'auto', height: '48px' }}>
-          <button type="submit" className="icon-button-plain" style={{ padding: 0 }}>
-            <Search size={18} color="#888" />
-          </button>
+          <Search size={18} color="#888" />
           <input
             type="text"
             value={localSearch}
             onChange={handleSearchChange}
             placeholder="Search products..."
-            style={{ background: 'none', border: 'none', outline: 'none', width: '100%', fontSize: '14px' }}
+            style={{ background: 'none', border: 'none', outline: 'none', width: '100%', fontSize: '14px', marginLeft: '10px' }}
           />
         </form>
       </div>
