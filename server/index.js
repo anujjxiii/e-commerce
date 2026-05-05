@@ -578,12 +578,15 @@ app.post('/api/payments', requireAuth, asyncHandler(async (req, res) => {
     CONTENT: Thank you for shopping with AURA STORE. 
     Your order for INR ${normalized.amount || req.body.amount} was received.
     Status: ${status}
-    // Send Order Email
-    if (req.user && req.user.email) {
-      sendOrderEmail(req.user.email, reference, normalized.amount || req.body.amount);
-    }
+    =========================================
+  `);
 
-    res.status(201).json({
+  // Send Order Email
+  if (req.user && req.user.email) {
+    sendOrderEmail(req.user.email, reference, normalized.amount || req.body.amount);
+  }
+
+  res.status(201).json({
     payment: {
       id: paymentId,
       amount: normalized.amount,
