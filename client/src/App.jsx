@@ -54,33 +54,24 @@ function App() {
               <div className="App">
                 <FloatingActions />
                 <CartDrawer />
+                <Navbar />
                 <Routes>
-                  {/* Public Routes with Navbar/Footer */}
-                  <Route path="*" element={
-                    <>
-                      <Navbar />
-                      <Routes>
-                        <Route path="/" element={<Home />} />
-                        <Route path="/cart" element={<Cart />} />
-                        <Route path="/checkout" element={<Checkout />} />
-                        <Route path="/profile" element={<Profile />} />
-                        <Route path="/wishlist" element={<Wishlist />} />
-                        <Route path="/addresses" element={<Addresses />} />
-                        <Route path="/settings" element={<Settings />} />
-                        <Route path="/login" element={<Login />} />
-                        <Route path="/product/:id" element={<ProductDetails />} />
-                        <Route path="/track-order" element={<TrackOrder />} />
-                        <Route path="/returns" element={<Returns />} />
-                        <Route path="/shipping" element={<Shipping />} />
-                        <Route path="*" element={<NotFound />} />
-                      </Routes>
-                      <Footer />
-                    </>
-                  } />
-                  
-                  {/* Private Admin Route without standard layout */}
+                  <Route path="/" element={<Home />} />
+                  <Route path="/cart" element={<Cart />} />
+                  <Route path="/checkout" element={<Checkout />} />
+                  <Route path="/profile" element={<Profile />} />
+                  <Route path="/wishlist" element={<Wishlist />} />
+                  <Route path="/addresses" element={<Addresses />} />
+                  <Route path="/settings" element={<Settings />} />
+                  <Route path="/login" element={<Login />} />
+                  <Route path="/product/:id" element={<ProductDetails />} />
+                  <Route path="/track-order" element={<TrackOrder />} />
+                  <Route path="/returns" element={<Returns />} />
+                  <Route path="/shipping" element={<Shipping />} />
                   <Route path="/admin-data" element={<AdminStats />} />
+                  <Route path="*" element={<NotFound />} />
                 </Routes>
+                <Footer />
               </div>
             </CartProvider>
           </WishlistProvider>

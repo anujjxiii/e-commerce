@@ -19,7 +19,6 @@ const Navbar = () => {
   const [localSearch, setLocalSearch] = useState(searchParams.get('search') || '');
   const [loadingProgress, setLoadingProgress] = useState(0);
   const [suggestions, setSuggestions] = useState([]);
-  const searchTimeoutRef = useRef(null);
 
   // Sync local search with URL ONLY when searchParams change from outside (like back button)
   useEffect(() => {
@@ -40,24 +39,33 @@ const Navbar = () => {
     };
   }, [location.pathname]);
 
-  // Autocomplete Logic
+  // Autocomplete & URL Update Logic
   useEffect(() => {
-    if (!localSearch || localSearch.length < 2) {
-      setSuggestions([]);
-      return;
-    }
-    const fetchSuggestions = async () => {
-      try {
-        const res = await api.get(`/products?search=${localSearch}`);
-        setSuggestions(res.data.slice(0, 5));
-      } catch (err) {
-        console.error(err);
+    const timer = setTimeout(() => {
+      // Update Suggestions
+      if (localSearch && localSearch.length >= 2) {
+        api.get(`/products?search=${localSearch}`)
+          .then(res => setSuggestions(res.data.slice(0, 5)))
+          .catch(console.error);
+      } else {
+        setSuggestions([]);
       }
-    };
 
-    const timeoutId = setTimeout(fetchSuggestions, 300);
-    return () => clearTimeout(timeoutId);
-  }, [localSearch]);
+      // Update URL
+      if (localSearch !== (searchParams.get('search') || '')) {
+        if (location.pathname !== '/') {
+          if (localSearch) navigate(`/?search=${encodeURIComponent(localSearch)}`);
+        } else {
+          const params = Object.fromEntries(searchParams.entries());
+          if (localSearch) params.search = localSearch;
+          else delete params.search;
+          setSearchParams(params, { replace: true });
+        }
+      }
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [localSearch, location.pathname]);
 
   const firstName = (user?.username || 'Customer').split(' ')[0].toUpperCase();
 
@@ -67,21 +75,7 @@ const Navbar = () => {
   }, [location.pathname]);
 
   const handleSearchChange = (e) => {
-    const term = e.target.value;
-    setLocalSearch(term);
-
-    if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
-
-    searchTimeoutRef.current = setTimeout(() => {
-      if (location.pathname !== '/') {
-        if (term) navigate(`/?search=${encodeURIComponent(term)}`);
-      } else {
-        const nextParams = new URLSearchParams(window.location.search);
-        if (term) nextParams.set('search', term);
-        else nextParams.delete('search');
-        setSearchParams(nextParams, { replace: true });
-      }
-    }, 500);
+    setLocalSearch(e.target.value);
   };
 
   const clearSearch = () => {
