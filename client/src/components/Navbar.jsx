@@ -16,8 +16,13 @@ const Navbar = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isSearchFocused, setIsSearchFocused] = useState(false);
+  const [localSearch, setLocalSearch] = useState(searchParams.get('search') || '');
   const [loadingProgress, setLoadingProgress] = useState(0);
   const [suggestions, setSuggestions] = useState([]);
+
+  useEffect(() => {
+    setLocalSearch(searchParams.get('search') || '');
+  }, [searchParams]);
 
   // Loading Bar Logic
   useEffect(() => {
@@ -33,7 +38,7 @@ const Navbar = () => {
   // Autocomplete Logic
   useEffect(() => {
     const fetchSuggestions = async () => {
-      const query = searchParams.get('search');
+      const query = localSearch;
       if (!query || query.length < 2) {
         setSuggestions([]);
         return;
@@ -48,9 +53,8 @@ const Navbar = () => {
 
     const timeoutId = setTimeout(fetchSuggestions, 300);
     return () => clearTimeout(timeoutId);
-  }, [searchParams]);
+  }, [localSearch]);
 
-  const currentSearch = searchParams.get('search') || '';
   const firstName = (user?.username || 'Customer').split(' ')[0].toUpperCase();
 
   // Close menu on route change
@@ -60,17 +64,21 @@ const Navbar = () => {
 
   const handleSearchChange = (e) => {
     const term = e.target.value;
+    setLocalSearch(term);
 
-    if (location.pathname !== '/') {
-      navigate(term ? `/?search=${encodeURIComponent(term)}` : `/`);
-    } else {
-      const nextParams = new URLSearchParams(searchParams);
+    const updateURL = () => {
+      if (location.pathname !== '/') {
+        if (term) navigate(`/?search=${encodeURIComponent(term)}`, { replace: true });
+      } else {
+        const nextParams = new URLSearchParams(searchParams);
+        if (term) nextParams.set('search', term);
+        else nextParams.delete('search');
+        setSearchParams(nextParams, { replace: true });
+      }
+    };
 
-      if (term) nextParams.set('search', term);
-      else nextParams.delete('search');
-
-      setSearchParams(nextParams);
-    }
+    const timeoutId = setTimeout(updateURL, 400);
+    return () => clearTimeout(timeoutId);
   };
 
   const clearSearch = () => {
@@ -133,14 +141,14 @@ const Navbar = () => {
               name="global_search"
               autoComplete="off"
               spellCheck="false"
-              value={currentSearch}
+              value={localSearch}
               onChange={handleSearchChange}
               onFocus={() => setIsSearchFocused(true)}
               onBlur={() => setTimeout(() => setIsSearchFocused(false), 200)}
               placeholder="Search for products..."
               style={{ background: 'none', border: 'none', outline: 'none', width: '100%', fontSize: '13px', fontWeight: '500', color: 'var(--text-primary)' }}
             />
-            {currentSearch && (
+            {localSearch && (
               <button type="button" className="icon-button-plain" onClick={clearSearch} aria-label="Clear search">
                 <X size={17} color="var(--text-primary)" />
               </button>
@@ -222,7 +230,7 @@ const Navbar = () => {
           <Search size={18} color="#888" />
           <input
             type="text"
-            value={currentSearch}
+            value={localSearch}
             onChange={handleSearchChange}
             placeholder="Search products..."
             style={{ background: 'none', border: 'none', outline: 'none', width: '100%', fontSize: '14px' }}
