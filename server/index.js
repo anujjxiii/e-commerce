@@ -1,12 +1,27 @@
+console.log("Starting server boot sequence...");
+process.on('uncaughtException', (err) => {
+  console.error("FATAL UNCAUGHT EXCEPTION:", err);
+  process.exit(1);
+});
+process.on('unhandledRejection', (err) => {
+  console.error("FATAL UNHANDLED REJECTION:", err);
+  process.exit(1);
+});
+
 const path = require('path');
 require('dotenv').config({ path: path.resolve(__dirname, '.env') });
+console.log("Environment variables loaded.");
+
 const express = require('express'); 
 const cors = require('cors');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { randomUUID, createHmac } = require('crypto');
 const Razorpay = require('razorpay');
+console.log("All modules required successfully.");
+
 const { all, get, initDatabase, run } = require('./database');
+console.log("Database module loaded.");
 
 const razorpayInstance = new Razorpay({
   key_id: process.env.RAZORPAY_KEY_ID || 'dummy_id',
