@@ -288,7 +288,25 @@ app.get('/api/products/:id', asyncHandler(async (req, res) => {
     return;
   }
 
-  res.json(product);
+  const reviews = await all('SELECT id, username, rating, comment, created_at FROM reviews WHERE product_id = ? ORDER BY created_at DESC', [productId]);
+  res.json({ ...product, reviews });
+}));
+
+app.post('/api/reviews', requireAuth, asyncHandler(async (req, res) => {
+  const { product_id, rating, comment } = req.body;
+  const username = req.user.username;
+
+  if (!product_id || !rating || !comment) {
+    res.status(400).json({ message: 'All fields are required.' });
+    return;
+  }
+
+  await run(
+    'INSERT INTO reviews (product_id, username, rating, comment) VALUES (?, ?, ?, ?)',
+    [product_id, username, rating, comment]
+  );
+
+  res.status(201).json({ message: 'Review added successfully' });
 }));
 
 app.post('/api/register', asyncHandler(async (req, res) => {
@@ -521,6 +539,17 @@ app.post('/api/payments', requireAuth, asyncHandler(async (req, res) => {
       JSON.stringify(normalized.metadata),
     ],
   );
+
+  // Mock Email Notification for both Online and COD
+  console.log(`
+    =========================================
+    MOCK EMAIL SENT TO: ${req.user?.email || 'Customer'}
+    SUBJECT: Order Confirmed! Reference: ${reference}
+    CONTENT: Thank you for shopping with AURA STORE. 
+    Your order for INR ${normalized.amount || req.body.amount} was received.
+    Status: ${status}
+    =========================================
+  `);
 
   res.status(201).json({
     payment: {
