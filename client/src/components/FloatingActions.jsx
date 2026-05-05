@@ -28,7 +28,7 @@ const FloatingActions = () => {
     <div className="floating-actions" style={{ display: 'flex', flexDirection: 'column', gap: '12px', position: 'fixed', bottom: '30px', right: '30px', zIndex: 1000 }}>
       {/* WhatsApp Button */}
       <a 
-        href="https://wa.me/91XXXXXXXXXX" 
+        href="https://wa.me/917303059402" 
         target="_blank" 
         rel="noopener noreferrer"
         className="floating-btn whatsapp-btn"
