@@ -1,16 +1,12 @@
-const sqlite3 = require('sqlite3').verbose();
-const path = require('path');
-const fs = require('fs');
+const { Pool } = require('pg');
 
-const configuredPath = process.env.DATABASE_URL || path.join('data', 'ecommerce.db');
-const dbPath = path.isAbsolute(configuredPath)
-  ? configuredPath
-  : path.resolve(__dirname, configuredPath);
+if (!process.env.POSTGRES_URL) {
+  console.warn("WARNING: POSTGRES_URL is not set. Database connection will fail.");
+}
 
-fs.mkdirSync(path.dirname(dbPath), { recursive: true });
-
-const db = new sqlite3.Database(dbPath);
-db.configure('busyTimeout', 5000);
+const pool = new Pool({
+  connectionString: process.env.POSTGRES_URL + "?sslmode=require",
+});
 
 const PRODUCT_SEED = [
   {
@@ -114,120 +110,50 @@ const PRODUCT_SEED = [
   },
 ];
 
-function run(sql, params = []) {
-  return new Promise((resolve, reject) => {
-    db.run(sql, params, function onRun(err) {
-      if (err) {
-        reject(err);
-        return;
-      }
-
-      resolve({ lastID: this.lastID, changes: this.changes });
-    });
-  });
+// Helper to convert SQLite ? to Postgres $1, $2, etc.
+function convertQuery(query) {
+  let count = 1;
+  return query.replace(/\?/g, () => `$${count++}`);
 }
 
-function get(sql, params = []) {
-  return new Promise((resolve, reject) => {
-    db.get(sql, params, (err, row) => {
-      if (err) {
-        reject(err);
-        return;
-      }
-
-      resolve(row);
-    });
-  });
+async function run(sql, params = []) {
+  const pgSql = convertQuery(sql);
+  const result = await pool.query(pgSql, params);
+  const lastID = result.rows && result.rows.length > 0 ? result.rows[0].id : null;
+  return { lastID, changes: result.rowCount };
 }
 
-function all(sql, params = []) {
-  return new Promise((resolve, reject) => {
-    db.all(sql, params, (err, rows) => {
-      if (err) {
-        reject(err);
-        return;
-      }
-
-      resolve(rows);
-    });
-  });
+async function get(sql, params = []) {
+  const pgSql = convertQuery(sql);
+  const result = await pool.query(pgSql, params);
+  return result.rows[0] || null;
 }
 
-function exec(sql) {
-  return new Promise((resolve, reject) => {
-    db.exec(sql, (err) => {
-      if (err) {
-        reject(err);
-        return;
-      }
-
-      resolve();
-    });
-  });
+async function all(sql, params = []) {
+  const pgSql = convertQuery(sql);
+  const result = await pool.query(pgSql, params);
+  return result.rows;
 }
 
-function close() {
-  return new Promise((resolve, reject) => {
-    db.close((err) => {
-      if (err) {
-        reject(err);
-        return;
-      }
-
-      resolve();
-    });
-  });
+async function exec(sql) {
+  await pool.query(sql);
 }
 
-async function tableExists(tableName) {
-  const row = await get(
-    "SELECT name FROM sqlite_master WHERE type = 'table' AND name = ?",
-    [tableName],
-  );
-  return Boolean(row);
+async function close() {
+  await pool.end();
 }
 
-async function migrateUsersTable() {
-  const usersExists = await tableExists('users');
-  await run('DROP TABLE IF EXISTS users_next');
+async function createUsersTable() {
   await run(`
-    CREATE TABLE users_next (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
+    CREATE TABLE IF NOT EXISTS users (
+      id SERIAL PRIMARY KEY,
       username TEXT NOT NULL,
       email TEXT NOT NULL UNIQUE,
       password TEXT,
       google_id TEXT UNIQUE,
-      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+      created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
     )
   `);
-
-  if (usersExists) {
-    const columns = await all('PRAGMA table_info(users)');
-    const columnNames = new Set(columns.map((column) => column.name));
-    const usernameExpr = columnNames.has('username')
-      ? "COALESCE(NULLIF(TRIM(username), ''), 'Customer')"
-      : "'Customer'";
-    const passwordExpr = columnNames.has('password') ? 'password' : 'NULL';
-    const googleExpr = columnNames.has('google_id')
-      ? 'google_id'
-      : columnNames.has('googleId')
-        ? 'googleId'
-        : 'NULL';
-    const createdAtExpr = columnNames.has('created_at')
-      ? "COALESCE(created_at, datetime('now'))"
-      : "datetime('now')";
-
-    await run(`
-      INSERT OR IGNORE INTO users_next (id, username, email, password, google_id, created_at)
-      SELECT id, ${usernameExpr}, LOWER(TRIM(email)), ${passwordExpr}, ${googleExpr}, ${createdAtExpr}
-      FROM users
-      WHERE email IS NOT NULL AND TRIM(email) <> ''
-      ORDER BY id ASC
-    `);
-    await run('DROP TABLE users');
-  }
-
-  await run('ALTER TABLE users_next RENAME TO users');
   await run('CREATE INDEX IF NOT EXISTS idx_users_email ON users(email)');
 }
 
@@ -235,14 +161,14 @@ async function resetProductsTable() {
   await run('DROP TABLE IF EXISTS products');
   await run(`
     CREATE TABLE products (
-      id INTEGER PRIMARY KEY,
+      id SERIAL PRIMARY KEY,
       name TEXT NOT NULL,
       price INTEGER NOT NULL CHECK (price >= 0),
       image TEXT NOT NULL,
       description TEXT NOT NULL,
       category TEXT NOT NULL,
       gender TEXT NOT NULL CHECK (gender IN ('Men', 'Women')),
-      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+      created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
     )
   `);
 
@@ -274,7 +200,7 @@ async function createPaymentsTable() {
       provider TEXT NOT NULL DEFAULT 'demo',
       reference TEXT NOT NULL UNIQUE,
       metadata TEXT,
-      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+      created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
     )
   `);
   await run('CREATE INDEX IF NOT EXISTS idx_payments_user_id ON payments(user_id)');
@@ -283,17 +209,18 @@ async function createPaymentsTable() {
 let initPromise;
 
 async function initializeDatabase() {
-  await exec('PRAGMA foreign_keys = ON; PRAGMA journal_mode = WAL;');
-  await run('BEGIN IMMEDIATE TRANSACTION');
-
+  const client = await pool.connect();
   try {
-    await migrateUsersTable();
+    await client.query('BEGIN');
+    await createUsersTable();
     await resetProductsTable();
     await createPaymentsTable();
-    await run('COMMIT');
+    await client.query('COMMIT');
   } catch (err) {
-    await run('ROLLBACK').catch(() => {});
+    await client.query('ROLLBACK').catch(() => {});
     throw err;
+  } finally {
+    client.release();
   }
 }
 
@@ -301,15 +228,13 @@ function initDatabase() {
   if (!initPromise) {
     initPromise = initializeDatabase();
   }
-
   return initPromise;
 }
 
 module.exports = {
   all,
   close,
-  db,
-  dbPath,
+  pool,
   get,
   initDatabase,
   run,

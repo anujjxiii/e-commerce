@@ -304,7 +304,7 @@ app.post('/api/register', asyncHandler(async (req, res) => {
 
   const passwordHash = await bcrypt.hash(password, 12);
   const result = await run(
-    'INSERT INTO users (username, email, password) VALUES (?, ?, ?)',
+    'INSERT INTO users (username, email, password) VALUES (?, ?, ?) RETURNING id',
     [username, email, passwordHash],
   );
   const user = { id: result.lastID, username, email };
@@ -536,7 +536,7 @@ app.post('/api/auth/google', asyncHandler(async (req, res) => {
     }
   } else {
     const result = await run(
-      'INSERT INTO users (username, email, google_id) VALUES (?, ?, ?)',
+      'INSERT INTO users (username, email, google_id) VALUES (?, ?, ?) RETURNING id',
       [username, email, googleId],
     );
     user = { id: result.lastID, username, email };
