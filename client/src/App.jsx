@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { Analytics } from '@vercel/analytics/react';
 import { CartProvider } from './context/CartContext';
 import { WishlistProvider } from './context/WishlistContext';
 import { UserProvider } from './context/UserContext';
@@ -50,6 +51,7 @@ function App() {
           <WishlistProvider>
             <CartProvider>
               <div className="App">
+                <Analytics />
                 <FloatingActions />
                 <CartDrawer />
                 <Navbar />
