@@ -4,8 +4,11 @@ if (!process.env.POSTGRES_URL) {
   console.warn("WARNING: POSTGRES_URL is not set. Database connection will fail.");
 }
 
+const connectionString = process.env.POSTGRES_URL ? process.env.POSTGRES_URL.split('?')[0] : '';
+
 const pool = new Pool({
-  connectionString: process.env.POSTGRES_URL + "?sslmode=require",
+  connectionString: connectionString,
+  ssl: { rejectUnauthorized: false },
 });
 
 const PRODUCT_SEED = [
