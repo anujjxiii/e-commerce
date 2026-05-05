@@ -141,13 +141,15 @@ const Home = () => {
         </div>
       </section>
 
-      <section className="hero-full">
-        <div className="hero-overlay" />
-        <div className="hero-content">
-          <h1>URBAN AURA</h1>
-          <p>New streetwear drops in premium cotton, structured denim, and everyday layers.</p>
-        </div>
-      </section>
+      {!searchQuery && (
+        <section className="hero-full">
+          <div className="hero-overlay" />
+          <div className="hero-content">
+            <h1>URBAN AURA</h1>
+            <p>New streetwear drops in premium cotton, structured denim, and everyday layers.</p>
+          </div>
+        </section>
+      )}
 
       <section className="container shop-section">
         <div className="trust-strip" style={{ background: 'var(--ss-light-grey)', color: 'var(--text-primary)', border: '1px solid var(--border-color)' }}>
@@ -157,7 +159,9 @@ const Home = () => {
         </div>
 
         <div className="section-title" style={{ marginBottom: '10px' }}>
-          <h2 style={{ color: 'black', fontSize: '24px', fontWeight: '950' }}>TOP TRENDING: {genderFilter.toUpperCase()}</h2>
+          <h2 style={{ color: 'black', fontSize: '24px', fontWeight: '950' }}>
+            {searchQuery ? `SEARCH RESULTS FOR: "${searchQuery.toUpperCase()}"` : `TOP TRENDING: ${genderFilter.toUpperCase()}`}
+          </h2>
         </div>
 
         {/* Filter Bar */}

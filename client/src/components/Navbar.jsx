@@ -4,6 +4,8 @@ import { ShoppingBag, User as UserIcon, Search, Heart, X, Menu } from 'lucide-re
 import { useCart } from '../context/CartContext';
 import { useWishlist } from '../context/WishlistContext';
 import { useUser } from '../context/UserContext';
+import api from '../api/client';
+
 
 const Navbar = () => {
   const { user } = useUser();
