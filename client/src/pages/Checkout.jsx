@@ -152,7 +152,7 @@ const Checkout = () => {
 
       // 2. Open Razorpay Checkout Modal
       const options = {
-        key: 'rzp_test_SlhSfVT4ynuVbZ',
+        key: import.meta.env.VITE_RAZORPAY_KEY_ID || 'rzp_test_SlhSfVT4ynuVbZ',
         amount: orderData.amount,
         currency: orderData.currency,
         name: 'AURA STORE',
