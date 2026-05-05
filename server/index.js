@@ -467,7 +467,7 @@ app.get('/api/admin/stats', asyncHandler(async (req, res) => {
 // --- COUPON ROUTES ---
 app.post('/api/coupons/validate', asyncHandler(async (req, res) => {
   const { code } = req.body;
-  const coupon = await get('SELECT * FROM coupons WHERE code = ? AND active = 1', [code]);
+  const coupon = await get('SELECT * FROM coupons WHERE code = ? AND active = TRUE', [code]);
   
   if (!coupon) {
     res.status(404).json({ message: 'Invalid or expired coupon code.' });

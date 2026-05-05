@@ -105,7 +105,16 @@ const AdminStats = () => {
     }
   };
 
-  if (loading || !data) return <div style={{ padding: '100px', textAlign: 'center', fontWeight: '900' }}>ACCESSING DATABASE...</div>;
+  if (loading) return <div style={{ padding: '100px', textAlign: 'center', fontWeight: '900' }}>ACCESSING DATABASE...</div>;
+  
+  if (error) return (
+    <div style={{ padding: '100px', textAlign: 'center' }}>
+      <h2 style={{ color: '#e11b23', fontWeight: '900' }}>ERROR: {error}</h2>
+      <button onClick={fetchStats} className="btn-red" style={{ marginTop: '20px', padding: '10px 20px', borderRadius: '6px' }}>TRY AGAIN</button>
+    </div>
+  );
+
+  if (!data) return null;
 
   return (
     <div style={{ minHeight: '100vh', background: '#fff', color: '#111', fontFamily: 'system-ui' }}>
