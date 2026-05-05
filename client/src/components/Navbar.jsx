@@ -39,10 +39,9 @@ const Navbar = () => {
     };
   }, [location.pathname]);
 
-  // Autocomplete & URL Update Logic
+  // Autocomplete Logic
   useEffect(() => {
     const timer = setTimeout(() => {
-      // Update Suggestions
       if (localSearch && localSearch.length >= 2) {
         api.get(`/products?search=${localSearch}`)
           .then(res => setSuggestions(res.data.slice(0, 5)))
@@ -50,22 +49,10 @@ const Navbar = () => {
       } else {
         setSuggestions([]);
       }
-
-      // Update URL
-      if (localSearch !== (searchParams.get('search') || '')) {
-        if (location.pathname !== '/') {
-          if (localSearch) navigate(`/?search=${encodeURIComponent(localSearch)}`);
-        } else {
-          const params = Object.fromEntries(searchParams.entries());
-          if (localSearch) params.search = localSearch;
-          else delete params.search;
-          setSearchParams(params, { replace: true });
-        }
-      }
-    }, 500);
+    }, 300);
 
     return () => clearTimeout(timer);
-  }, [localSearch, location.pathname]);
+  }, [localSearch]);
 
   const firstName = (user?.username || 'Customer').split(' ')[0].toUpperCase();
 
@@ -78,7 +65,21 @@ const Navbar = () => {
     setLocalSearch(e.target.value);
   };
 
+  const handleSearchSubmit = (e) => {
+    if (e) e.preventDefault();
+    if (location.pathname !== '/') {
+      navigate(localSearch ? `/?search=${encodeURIComponent(localSearch)}` : '/');
+    } else {
+      const params = Object.fromEntries(searchParams.entries());
+      if (localSearch) params.search = localSearch;
+      else delete params.search;
+      setSearchParams(params);
+    }
+    setIsSearchFocused(false);
+  };
+
   const clearSearch = () => {
+    setLocalSearch('');
     if (location.pathname !== '/') {
       navigate('/');
       return;
@@ -131,8 +132,10 @@ const Navbar = () => {
           </div>
 
           {/* Desktop Search Bar - Hidden on Mobile */}
-          <div className={`search-pill ${isSearchFocused ? 'focused' : ''}`} style={{ background: 'var(--ss-light-grey)' }}>
-            <Search size={18} color={isSearchFocused ? "var(--text-primary)" : "#888"} />
+          <form onSubmit={handleSearchSubmit} className={`search-pill ${isSearchFocused ? 'focused' : ''}`} style={{ background: 'var(--ss-light-grey)' }}>
+            <button type="submit" className="icon-button-plain" style={{ padding: 0 }}>
+              <Search size={18} color={isSearchFocused ? "var(--text-primary)" : "#888"} />
+            </button>
             <input
               type="text"
               name="global_search"
@@ -223,8 +226,10 @@ const Navbar = () => {
         </div>
 
         {/* Search in Mobile Menu - Moved to bottom */}
-        <div className="search-pill" style={{ display: 'flex', marginTop: 'auto', padding: '12px 24px', flex: 'none', width: '100%', minWidth: 'auto', height: '48px' }}>
-          <Search size={18} color="#888" />
+        <form onSubmit={handleSearchSubmit} className="search-pill" style={{ display: 'flex', marginTop: 'auto', padding: '12px 24px', flex: 'none', width: '100%', minWidth: 'auto', height: '48px' }}>
+          <button type="submit" className="icon-button-plain" style={{ padding: 0 }}>
+            <Search size={18} color="#888" />
+          </button>
           <input
             type="text"
             value={localSearch}
@@ -232,7 +237,7 @@ const Navbar = () => {
             placeholder="Search products..."
             style={{ background: 'none', border: 'none', outline: 'none', width: '100%', fontSize: '14px' }}
           />
-        </div>
+        </form>
       </div>
     </header>
   );
