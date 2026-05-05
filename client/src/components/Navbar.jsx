@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Link, useLocation, useSearchParams, useNavigate } from 'react-router-dom';
 import { ShoppingBag, User as UserIcon, Search, Heart, X, Menu } from 'lucide-react';
 import { useCart } from '../context/CartContext';
@@ -19,9 +19,14 @@ const Navbar = () => {
   const [localSearch, setLocalSearch] = useState(searchParams.get('search') || '');
   const [loadingProgress, setLoadingProgress] = useState(0);
   const [suggestions, setSuggestions] = useState([]);
+  const searchTimeoutRef = useRef(null);
 
+  // Sync local search with URL ONLY when searchParams change from outside (like back button)
   useEffect(() => {
-    setLocalSearch(searchParams.get('search') || '');
+    const urlSearch = searchParams.get('search') || '';
+    if (urlSearch !== localSearch) {
+      setLocalSearch(urlSearch);
+    }
   }, [searchParams]);
 
   // Loading Bar Logic
@@ -37,14 +42,13 @@ const Navbar = () => {
 
   // Autocomplete Logic
   useEffect(() => {
+    if (!localSearch || localSearch.length < 2) {
+      setSuggestions([]);
+      return;
+    }
     const fetchSuggestions = async () => {
-      const query = localSearch;
-      if (!query || query.length < 2) {
-        setSuggestions([]);
-        return;
-      }
       try {
-        const res = await api.get(`/products?search=${query}`);
+        const res = await api.get(`/products?search=${localSearch}`);
         setSuggestions(res.data.slice(0, 5));
       } catch (err) {
         console.error(err);
@@ -66,19 +70,18 @@ const Navbar = () => {
     const term = e.target.value;
     setLocalSearch(term);
 
-    const updateURL = () => {
+    if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
+
+    searchTimeoutRef.current = setTimeout(() => {
       if (location.pathname !== '/') {
-        if (term) navigate(`/?search=${encodeURIComponent(term)}`, { replace: true });
+        if (term) navigate(`/?search=${encodeURIComponent(term)}`);
       } else {
-        const nextParams = new URLSearchParams(searchParams);
+        const nextParams = new URLSearchParams(window.location.search);
         if (term) nextParams.set('search', term);
         else nextParams.delete('search');
         setSearchParams(nextParams, { replace: true });
       }
-    };
-
-    const timeoutId = setTimeout(updateURL, 400);
-    return () => clearTimeout(timeoutId);
+    }, 500);
   };
 
   const clearSearch = () => {
