@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+
 import { CreditCard, RotateCcw, Truck, Filter, ListFilter } from 'lucide-react';
 import { useSearchParams } from 'react-router-dom';
 import api from '../api/client';
@@ -224,24 +226,41 @@ const Home = () => {
             </button>
           </div>
         ) : (
-          <div className="product-grid">
+          <motion.div 
+            className="product-grid"
+            initial="hidden"
+            animate="visible"
+            variants={{
+              visible: { transition: { staggerChildren: 0.1 } }
+            }}
+          >
             {filteredProducts.length === 0 ? (
               <div className="state-panel product-grid-empty">
                 <h3>No results found</h3>
                 <p>Nothing matched your selection. Try adjusting filters or search.</p>
               </div>
             ) : (
-              filteredProducts.map((product) => (
-                <ProductCard
-                  key={product.id}
-                  product={product}
-                  isWishlisted={isInWishlist(product.id)}
-                  onAddToCart={handleAddToCart}
-                  onWishlistToggle={toggleWishlist}
-                />
-              ))
+              <AnimatePresence mode="popLayout">
+                {filteredProducts.map((product) => (
+                  <motion.div
+                    key={product.id}
+                    layout
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.9 }}
+                    transition={{ duration: 0.3 }}
+                  >
+                    <ProductCard
+                      product={product}
+                      isWishlisted={isInWishlist(product.id)}
+                      onAddToCart={handleAddToCart}
+                      onWishlistToggle={toggleWishlist}
+                    />
+                  </motion.div>
+                ))}
+              </AnimatePresence>
             )}
-          </div>
+          </motion.div>
         )}
       </section>
 

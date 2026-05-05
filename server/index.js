@@ -245,11 +245,27 @@ app.get('/api/products', asyncHandler(async (req, res) => {
     `SELECT id, name, price, image, description, category, gender
      FROM products
      ${where.length ? `WHERE ${where.join(' AND ')}` : ''}
-     ORDER BY id ASC`,
+     ORDER BY id DESC`,
     params,
   );
 
   res.json(products);
+}));
+
+app.post('/api/products', asyncHandler(async (req, res) => {
+  const { name, price, image, description, category, gender } = req.body;
+  
+  if (!name || !price || !image || !description || !category || !gender) {
+    res.status(400).json({ message: 'All product fields are required.' });
+    return;
+  }
+
+  const result = await run(
+    'INSERT INTO products (name, price, image, description, category, gender) VALUES (?, ?, ?, ?, ?, ?) RETURNING id',
+    [name, Number(price), image, description, category, gender]
+  );
+
+  res.status(201).json({ message: 'Product added successfully', id: result.lastID });
 }));
 
 app.get('/api/products/:id', asyncHandler(async (req, res) => {
