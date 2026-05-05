@@ -74,8 +74,11 @@ const Home = () => {
       setError('');
 
       try {
+        // If searching, we fetch all products to make it a global search
+        const params = searchQuery.trim() ? {} : { gender: genderFilter };
+        
         const response = await api.get('/products', {
-          params: { gender: genderFilter },
+          params,
           signal: controller.signal,
         });
         setProducts(response.data);
@@ -93,7 +96,7 @@ const Home = () => {
     fetchProducts();
 
     return () => controller.abort();
-  }, [genderFilter]);
+  }, [genderFilter, searchQuery]);
 
   const handleGenderChange = (gender) => {
     const nextParams = new URLSearchParams(searchParams);
