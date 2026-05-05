@@ -141,7 +141,7 @@ const Home = () => {
         </div>
       </section>
 
-      {!searchQuery && (
+      {!searchQuery.trim() && (
         <section className="hero-full">
           <div className="hero-overlay" />
           <div className="hero-content">

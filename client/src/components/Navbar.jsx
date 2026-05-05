@@ -196,22 +196,7 @@ const Navbar = () => {
         </div>
       </nav>
 
-      {/* Search Overlay */}
-      {isSearchFocused && (
-        <div
-          style={{
-            position: 'fixed',
-            top: '0',
-            left: 0,
-            width: '100%',
-            height: '100%',
-            background: 'rgba(255,255,255,0.9)',
-            backdropFilter: 'blur(5px)',
-            zIndex: 999,
-            pointerEvents: 'none'
-          }}
-        />
-      )}
+      {/* Search Overlay removed */}
 
       {/* Mobile Sidebar Menu */}
       <div className={`mobile-overlay ${isMenuOpen ? 'active' : ''}`} onClick={() => setIsMenuOpen(false)} />
