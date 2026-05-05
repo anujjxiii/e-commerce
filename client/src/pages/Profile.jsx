@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import api from '../api/client';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { Package, Heart, LogOut, MapPin, Settings as SettingsIcon, ChevronDown, ChevronUp, Truck, CheckCircle, Home } from 'lucide-react';
 import BackButton from '../components/BackButton';
@@ -20,15 +21,38 @@ const Profile = () => {
   const { user, logout } = useUser();
   const navigate = useNavigate();
   const location = useLocation();
-  const [orders] = useState(() => getSavedOrders(user?.email));
+  const [orders, setOrders] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [expandedOrder, setExpandedOrder] = useState(null);
 
   useEffect(() => {
-    const loggedInUser = localStorage.getItem('user');
-    if (!loggedInUser && !user) navigate('/login');
-  }, [user, navigate]);
+    if (!user) {
+      navigate('/login');
+      return;
+    }
+    fetchOrders();
+  }, [user]);
 
-  if (!user) return null;
+  const fetchOrders = async () => {
+    try {
+      const res = await api.get('/orders/me');
+      // Format backend orders to match UI structure
+      const formatted = res.data.map(order => ({
+        id: order.id,
+        reference: order.reference,
+        date: new Date(order.created_at).toLocaleDateString(),
+        total: order.amount,
+        status: order.status_track || 'processing',
+        payment_status: order.status,
+        items: JSON.parse(order.metadata).items || []
+      }));
+      setOrders(formatted);
+    } catch (err) {
+      console.error('Failed to fetch orders');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const toggleOrder = (id) => {
     setExpandedOrder(expandedOrder === id ? null : id);
@@ -125,7 +149,7 @@ const Profile = () => {
                             position: 'absolute', 
                             top: '12px', 
                             left: '0', 
-                            width: order.status === 'Delivered' ? '100%' : order.status === 'Shipped' ? '66%' : order.status === 'Processing' ? '33%' : '0%', 
+                            width: order.status === 'delivered' ? '100%' : order.status === 'shipped' ? '66%' : '33%', 
                             height: '2px', 
                             background: '#008080', 
                             zIndex: 2,
@@ -140,40 +164,40 @@ const Profile = () => {
                             <div style={{ 
                               width: '24px', 
                               height: '24px', 
-                              background: ['Processing', 'Shipped', 'Delivered'].includes(order.status) ? '#008080' : 'var(--border-color)', 
+                              background: ['processing', 'shipped', 'delivered'].includes(order.status) ? '#008080' : 'var(--border-color)', 
                               borderRadius: '50%', 
                               display: 'flex', 
                               alignItems: 'center', 
                               justifyContent: 'center', 
-                              color: ['Processing', 'Shipped', 'Delivered'].includes(order.status) ? 'white' : 'var(--text-secondary)' 
+                              color: ['processing', 'shipped', 'delivered'].includes(order.status) ? 'white' : 'var(--text-secondary)' 
                             }}><Package size={14} /></div>
-                            <span style={{ fontSize: '10px', fontWeight: '900', color: ['Processing', 'Shipped', 'Delivered'].includes(order.status) ? '#008080' : 'var(--text-secondary)' }}>PROCESSING</span>
+                            <span style={{ fontSize: '10px', fontWeight: '900', color: ['processing', 'shipped', 'delivered'].includes(order.status) ? '#008080' : 'var(--text-secondary)' }}>PROCESSING</span>
                           </div>
                           <div style={{ position: 'relative', zIndex: 3, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
                             <div style={{ 
                               width: '24px', 
                               height: '24px', 
-                              background: ['Shipped', 'Delivered'].includes(order.status) ? '#008080' : 'var(--border-color)', 
+                              background: ['shipped', 'delivered'].includes(order.status) ? '#008080' : 'var(--border-color)', 
                               borderRadius: '50%', 
                               display: 'flex', 
                               alignItems: 'center', 
                               justifyContent: 'center', 
-                              color: ['Shipped', 'Delivered'].includes(order.status) ? 'white' : 'var(--text-secondary)' 
+                              color: ['shipped', 'delivered'].includes(order.status) ? 'white' : 'var(--text-secondary)' 
                             }}><Truck size={14} /></div>
-                            <span style={{ fontSize: '10px', fontWeight: '900', color: ['Shipped', 'Delivered'].includes(order.status) ? '#008080' : 'var(--text-secondary)' }}>SHIPPED</span>
+                            <span style={{ fontSize: '10px', fontWeight: '900', color: ['shipped', 'delivered'].includes(order.status) ? '#008080' : 'var(--text-secondary)' }}>SHIPPED</span>
                           </div>
                           <div style={{ position: 'relative', zIndex: 3, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
                             <div style={{ 
                               width: '24px', 
                               height: '24px', 
-                              background: order.status === 'Delivered' ? '#008080' : 'var(--border-color)', 
+                              background: order.status === 'delivered' ? '#008080' : 'var(--border-color)', 
                               borderRadius: '50%', 
                               display: 'flex', 
                               alignItems: 'center', 
                               justifyContent: 'center', 
-                              color: order.status === 'Delivered' ? 'white' : 'var(--text-secondary)' 
+                              color: order.status === 'delivered' ? 'white' : 'var(--text-secondary)' 
                             }}><Home size={14} /></div>
-                            <span style={{ fontSize: '10px', fontWeight: '900', color: order.status === 'Delivered' ? '#008080' : 'var(--text-secondary)' }}>DELIVERED</span>
+                            <span style={{ fontSize: '10px', fontWeight: '900', color: order.status === 'delivered' ? '#008080' : 'var(--text-secondary)' }}>DELIVERED</span>
                           </div>
                         </div>
                       </div>

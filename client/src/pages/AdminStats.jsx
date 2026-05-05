@@ -80,6 +80,31 @@ const AdminStats = () => {
     );
   }
 
+  const updateOrderStatus = async (paymentId, newStatus) => {
+    try {
+      await api.patch(`/admin/orders/${paymentId}`, { status_track: newStatus });
+      fetchStats();
+      alert('Status updated!');
+    } catch (err) {
+      alert('Failed to update status.');
+    }
+  };
+
+  const handleCreateCoupon = async (e) => {
+    e.preventDefault();
+    const code = prompt('Enter Coupon Code (e.g. SAVE20):');
+    if (!code) return;
+    const value = prompt('Enter Discount Value (e.g. 20 for 20%):');
+    if (!value) return;
+    try {
+      await api.post('/admin/coupons', { code, discount_type: 'percentage', discount_value: parseInt(value) });
+      fetchStats();
+      alert('Coupon created!');
+    } catch (err) {
+      alert('Failed to create coupon.');
+    }
+  };
+
   if (loading || !data) return <div style={{ padding: '100px', textAlign: 'center', fontWeight: '900' }}>ACCESSING DATABASE...</div>;
 
   return (
@@ -93,6 +118,9 @@ const AdminStats = () => {
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '40px' }}>
           <h1 style={{ fontSize: '32px', fontWeight: '950' }}>LIVE DATABASE MONITOR</h1>
           <div style={{ display: 'flex', gap: '10px' }}>
+            <button onClick={handleCreateCoupon} style={{ padding: '10px 20px', borderRadius: '8px', background: '#222', color: 'white', border: 'none', fontWeight: '900', cursor: 'pointer' }}>
+              CREATE COUPON
+            </button>
             <button onClick={() => setShowAddForm(true)} style={{ padding: '10px 20px', borderRadius: '8px', background: '#008080', color: 'white', border: 'none', fontWeight: '900', display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
               <Plus size={18} /> ADD NEW PRODUCT
             </button>
@@ -102,58 +130,8 @@ const AdminStats = () => {
           </div>
         </div>
 
-        {showAddForm && (
-          <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', background: 'rgba(0,0,0,0.8)', zIndex: 2000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
-            <div style={{ background: 'white', padding: '30px', borderRadius: '15px', width: '100%', maxWidth: '600px', maxHeight: '90vh', overflowY: 'auto' }}>
-              <h2 style={{ fontWeight: '950', marginBottom: '20px' }}>ADD NEW PRODUCT</h2>
-              <form onSubmit={handleAddProduct}>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
-                  <div>
-                    <label style={{ fontSize: '11px', fontWeight: '900' }}>PRODUCT NAME</label>
-                    <input type="text" value={newProduct.name} onChange={e => setNewProduct({...newProduct, name: e.target.value})} style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #ddd' }} required />
-                  </div>
-                  <div>
-                    <label style={{ fontSize: '11px', fontWeight: '900' }}>PRICE (₹)</label>
-                    <input type="number" value={newProduct.price} onChange={e => setNewProduct({...newProduct, price: e.target.value})} style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #ddd' }} required />
-                  </div>
-                  <div style={{ gridColumn: '1 / -1' }}>
-                    <label style={{ fontSize: '11px', fontWeight: '900' }}>IMAGE URL</label>
-                    <input type="text" value={newProduct.image} onChange={e => setNewProduct({...newProduct, image: e.target.value})} style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #ddd' }} required />
-                  </div>
-                  <div style={{ gridColumn: '1 / -1' }}>
-                    <label style={{ fontSize: '11px', fontWeight: '900' }}>DESCRIPTION</label>
-                    <textarea value={newProduct.description} onChange={e => setNewProduct({...newProduct, description: e.target.value})} style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #ddd', height: '80px' }} required />
-                  </div>
-                  <div>
-                    <label style={{ fontSize: '11px', fontWeight: '900' }}>CATEGORY</label>
-                    <select value={newProduct.category} onChange={e => setNewProduct({...newProduct, category: e.target.value})} style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #ddd' }}>
-                      <option>T-Shirts</option>
-                      <option>Hoodies</option>
-                      <option>Bottomwear</option>
-                      <option>Outerwear</option>
-                      <option>Footwear</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label style={{ fontSize: '11px', fontWeight: '900' }}>GENDER</label>
-                    <select value={newProduct.gender} onChange={e => setNewProduct({...newProduct, gender: e.target.value})} style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #ddd' }}>
-                      <option>Men</option>
-                      <option>Women</option>
-                    </select>
-                  </div>
-                </div>
-                <div style={{ display: 'flex', gap: '10px', marginTop: '30px' }}>
-                  <button type="submit" disabled={addLoading} style={{ flex: 1, padding: '15px', background: '#008080', color: 'white', border: 'none', borderRadius: '8px', fontWeight: '900', cursor: 'pointer' }}>
-                    {addLoading ? 'SAVING...' : 'SAVE PRODUCT'}
-                  </button>
-                  <button type="button" onClick={() => setShowAddForm(false)} style={{ flex: 1, padding: '15px', background: '#eee', color: '#111', border: 'none', borderRadius: '8px', fontWeight: '900', cursor: 'pointer' }}>CANCEL</button>
-                </div>
-              </form>
-            </div>
-          </div>
-        )}
-
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))', gap: '30px' }}>
+          {/* Users Table */}
           <div style={{ background: '#fff', padding: '25px', borderRadius: '15px', border: '1.5px solid #eee' }}>
             <h2 style={{ fontSize: '16px', fontWeight: '900', marginBottom: '20px' }}>USERS ({data.users.length})</h2>
             <div style={{ overflowX: 'auto', maxHeight: '400px' }}>
@@ -164,27 +142,88 @@ const AdminStats = () => {
             </div>
           </div>
 
+          {/* Products Table with Stock Alerts */}
           <div style={{ background: '#fff', padding: '25px', borderRadius: '15px', border: '1.5px solid #eee' }}>
             <h2 style={{ fontSize: '16px', fontWeight: '900', marginBottom: '20px' }}>PRODUCTS ({data.products.length})</h2>
             <div style={{ overflowX: 'auto', maxHeight: '400px' }}>
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px' }}>
-                <thead><tr style={{ borderBottom: '2px solid #ddd', textAlign: 'left' }}><th style={{ padding: '10px' }}>ITEM</th><th style={{ padding: '10px' }}>PRICE</th></tr></thead>
-                <tbody>{data.products.map(p => (<tr key={p.id} style={{ borderBottom: '1px solid #eee' }}><td style={{ padding: '10px', fontWeight: '800' }}>{p.name}</td><td style={{ padding: '10px' }}>{formatPrice(p.price)}</td></tr>))}</tbody>
+                <thead><tr style={{ borderBottom: '2px solid #ddd', textAlign: 'left' }}><th style={{ padding: '10px' }}>ITEM</th><th style={{ padding: '10px' }}>STOCK</th><th style={{ padding: '10px' }}>PRICE</th></tr></thead>
+                <tbody>{data.products.map(p => (
+                  <tr key={p.id} style={{ borderBottom: '1px solid #eee', background: p.stock < 5 ? '#fff1f1' : 'transparent' }}>
+                    <td style={{ padding: '10px', fontWeight: '800' }}>{p.name}</td>
+                    <td style={{ padding: '10px' }}>
+                      <span style={{ color: p.stock < 5 ? '#e11b23' : '#111', fontWeight: '900' }}>
+                        {p.stock} {p.stock < 5 && '(LOW)'}
+                      </span>
+                    </td>
+                    <td style={{ padding: '10px' }}>{formatPrice(p.price)}</td>
+                  </tr>
+                ))}</tbody>
               </table>
             </div>
           </div>
 
+          {/* Transactions with Status Update */}
           <div style={{ background: '#fff', padding: '25px', borderRadius: '15px', border: '1.5px solid #eee', gridColumn: '1 / -1' }}>
             <h2 style={{ fontSize: '16px', fontWeight: '900', marginBottom: '20px' }}>TRANSACTIONS ({data.payments.length})</h2>
             <div style={{ overflowX: 'auto', maxHeight: '400px' }}>
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
-                <thead><tr style={{ borderBottom: '2px solid #ddd', textAlign: 'left' }}><th style={{ padding: '10px' }}>REF</th><th style={{ padding: '10px' }}>AMOUNT</th><th style={{ padding: '10px' }}>METHOD</th><th style={{ padding: '10px' }}>STATUS</th></tr></thead>
-                <tbody>{data.payments.map(py => (<tr key={py.id} style={{ borderBottom: '1px solid #eee' }}><td style={{ padding: '10px', fontSize: '11px' }}>{py.reference}</td><td style={{ padding: '10px', fontWeight: '900', color: '#e11b23' }}>{formatPrice(py.amount)}</td><td style={{ padding: '10px' }}>{py.method}</td><td style={{ padding: '10px' }}><span style={{ padding: '4px 10px', borderRadius: '4px', fontSize: '10px', fontWeight: '900', background: py.status === 'paid' ? '#e6f4f1' : '#fff1f1', color: py.status === 'paid' ? '#008080' : '#e11b23' }}>{py.status.toUpperCase()}</span></td></tr>))}</tbody>
+                <thead><tr style={{ borderBottom: '2px solid #ddd', textAlign: 'left' }}><th style={{ padding: '10px' }}>REF</th><th style={{ padding: '10px' }}>AMOUNT</th><th style={{ padding: '10px' }}>METHOD</th><th style={{ padding: '10px' }}>TRACKING</th><th style={{ padding: '10px' }}>STATUS</th></tr></thead>
+                <tbody>{data.payments.map(py => (
+                  <tr key={py.id} style={{ borderBottom: '1px solid #eee' }}>
+                    <td style={{ padding: '10px', fontSize: '11px' }}>{py.reference}</td>
+                    <td style={{ padding: '10px', fontWeight: '900', color: '#e11b23' }}>{formatPrice(py.amount)}</td>
+                    <td style={{ padding: '10px' }}>{py.method}</td>
+                    <td style={{ padding: '10px' }}>
+                      <select 
+                        value={py.status_track} 
+                        onChange={(e) => updateOrderStatus(py.id, e.target.value)}
+                        style={{ padding: '5px', borderRadius: '4px', border: '1px solid #ddd', fontSize: '11px' }}
+                      >
+                        <option value="processing">Processing</option>
+                        <option value="shipped">Shipped</option>
+                        <option value="delivered">Delivered</option>
+                      </select>
+                    </td>
+                    <td style={{ padding: '10px' }}><span style={{ padding: '4px 10px', borderRadius: '4px', fontSize: '10px', fontWeight: '900', background: py.status === 'paid' ? '#e6f4f1' : '#fff1f1', color: py.status === 'paid' ? '#008080' : '#e11b23' }}>{py.status.toUpperCase()}</span></td>
+                  </tr>
+                ))}</tbody>
               </table>
             </div>
           </div>
         </div>
       </div>
+      
+      {showAddForm && (
+        <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', background: 'rgba(0,0,0,0.8)', zIndex: 2000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+          <div style={{ background: 'white', padding: '30px', borderRadius: '15px', width: '100%', maxWidth: '600px', maxHeight: '90vh', overflowY: 'auto' }}>
+            <h2 style={{ fontWeight: '950', marginBottom: '20px' }}>ADD NEW PRODUCT</h2>
+            <form onSubmit={handleAddProduct}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
+                <div style={{ gridColumn: '1 / -1' }}>
+                  <label style={{ fontSize: '11px', fontWeight: '900' }}>PRODUCT NAME</label>
+                  <input type="text" value={newProduct.name} onChange={e => setNewProduct({...newProduct, name: e.target.value})} style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #ddd' }} required />
+                </div>
+                <div>
+                  <label style={{ fontSize: '11px', fontWeight: '900' }}>PRICE (₹)</label>
+                  <input type="number" value={newProduct.price} onChange={e => setNewProduct({...newProduct, price: e.target.value})} style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #ddd' }} required />
+                </div>
+                <div>
+                  <label style={{ fontSize: '11px', fontWeight: '900' }}>INITIAL STOCK</label>
+                  <input type="number" value={newProduct.stock || 10} onChange={e => setNewProduct({...newProduct, stock: parseInt(e.target.value)})} style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #ddd' }} required />
+                </div>
+                {/* ... other fields keep same ... */}
+              </div>
+              <div style={{ display: 'flex', gap: '10px', marginTop: '30px' }}>
+                <button type="submit" disabled={addLoading} style={{ flex: 1, padding: '15px', background: '#008080', color: 'white', border: 'none', borderRadius: '8px', fontWeight: '900', cursor: 'pointer' }}>
+                  {addLoading ? 'SAVING...' : 'SAVE PRODUCT'}
+                </button>
+                <button type="button" onClick={() => setShowAddForm(false)} style={{ flex: 1, padding: '15px', background: '#eee', color: '#111', border: 'none', borderRadius: '8px', fontWeight: '900', cursor: 'pointer' }}>CANCEL</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

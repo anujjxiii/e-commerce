@@ -69,19 +69,22 @@ const Checkout = () => {
     }
   }, [cart.length, user, navigate]);
 
-  const handleApplyCoupon = () => {
+  const handleApplyCoupon = async () => {
     if (!couponInput.trim()) return;
     setIsApplying(true);
-    setTimeout(() => {
-      const success = applyCoupon(couponInput);
+    try {
+      const success = await applyCoupon(couponInput);
       if (success) {
         showToast('Coupon applied successfully!', 'success');
         setCouponInput('');
       } else {
         showToast('Invalid coupon code.', 'error');
       }
+    } catch (err) {
+      showToast('Error applying coupon.', 'error');
+    } finally {
       setIsApplying(false);
-    }, 600);
+    }
   };
 
 
@@ -122,7 +125,7 @@ const Checkout = () => {
     if (paymentMethod === 'cod') {
       setIsPaying(true);
       try {
-        const payload = { amount: finalTotal, method: 'cod' };
+        const payload = { amount: finalTotal, method: 'cod', metadata: { items: cart } };
         const response = await api.post('/payments', payload);
         saveOrder(response.data.payment);
         setIsOrdered(true);
@@ -182,7 +185,8 @@ const Checkout = () => {
               amount: finalTotal,
               razorpay_order_id: response.razorpay_order_id,
               razorpay_payment_id: response.razorpay_payment_id,
-              razorpay_signature: response.razorpay_signature
+              razorpay_signature: response.razorpay_signature,
+              metadata: { items: cart }
             };
             const verifyResponse = await api.post('/payments', verifyPayload);
             saveOrder(verifyResponse.data.payment);

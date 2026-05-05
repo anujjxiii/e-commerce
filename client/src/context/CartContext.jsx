@@ -1,4 +1,5 @@
 import { createContext, useState, useContext, useEffect } from 'react';
+import api from '../api/client';
 
 const CartContext = createContext();
 const getCartKey = (product) => `${product.id}:${product.selectedSize || 'standard'}`;
@@ -53,27 +54,23 @@ export const CartProvider = ({ children }) => {
 
   const toggleCart = (state) => setIsCartOpen(prev => typeof state === 'boolean' ? state : !prev);
 
-  const applyCoupon = (code) => {
-    const coupons = {
-      'AURA10': 0.10,
-      'AURA20': 0.20,
-      'AURA30': 0.30,
-      'WELCOME50': 0.50,
-      'FIRST25': 0.25,
-      'SAVE15': 0.15,
-      'VIP40': 0.40,
-      'SUMMER5': 0.05,
-      'LUCKY77': 0.77,
-      'FREE100': 1.00
-    };
-
-    const upperCode = code.toUpperCase().trim();
-    if (coupons[upperCode] !== undefined) {
-      setDiscount(coupons[upperCode]);
-      setAppliedCoupon(upperCode);
+  const applyCoupon = async (code) => {
+    try {
+      const response = await api.post('/coupons/validate', { code });
+      const coupon = response.data;
+      
+      const value = coupon.discount_type === 'percentage' 
+        ? coupon.discount_value / 100 
+        : coupon.discount_value / subtotal;
+        
+      setDiscount(value);
+      setAppliedCoupon(code.toUpperCase());
       return true;
+    } catch (err) {
+      setDiscount(0);
+      setAppliedCoupon('');
+      return false;
     }
-    return false;
   };
 
   const cartCount = cart.reduce((total, item) => total + item.quantity, 0);

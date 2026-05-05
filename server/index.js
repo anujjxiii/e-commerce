@@ -451,15 +451,48 @@ app.get('/api/users', requireAuth, asyncHandler(async (req, res) => {
 
 app.get('/api/admin/stats', asyncHandler(async (req, res) => {
   const users = await all('SELECT id, username, email, created_at FROM users ORDER BY created_at DESC');
-  const products = await all('SELECT id, name, price, category FROM products');
-  const payments = await all('SELECT id, amount, status, method, reference, created_at FROM payments ORDER BY created_at DESC');
+  const products = await all('SELECT id, name, price, category, stock FROM products');
+  const payments = await all('SELECT id, amount, status, method, reference, created_at, status_track FROM payments ORDER BY created_at DESC');
+  const coupons = await all('SELECT * FROM coupons');
   
   res.json({
     users,
     products,
     payments,
+    coupons,
     db_status: 'Connected to Supabase PostgreSQL'
   });
+}));
+
+// --- COUPON ROUTES ---
+app.post('/api/coupons/validate', asyncHandler(async (req, res) => {
+  const { code } = req.body;
+  const coupon = await get('SELECT * FROM coupons WHERE code = ? AND active = 1', [code]);
+  
+  if (!coupon) {
+    res.status(404).json({ message: 'Invalid or expired coupon code.' });
+    return;
+  }
+  
+  res.json(coupon);
+}));
+
+app.post('/api/admin/coupons', asyncHandler(async (req, res) => {
+  const { code, discount_type, discount_value } = req.body;
+  await run('INSERT INTO coupons (code, discount_type, discount_value) VALUES (?, ?, ?)', [code, discount_type, discount_value]);
+  res.status(201).json({ message: 'Coupon created successfully' });
+}));
+
+// --- ORDER TRACKING ROUTES ---
+app.get('/api/orders/me', requireAuth, asyncHandler(async (req, res) => {
+  const orders = await all('SELECT * FROM payments WHERE user_id = ? ORDER BY created_at DESC', [req.auth.id]);
+  res.json(orders);
+}));
+
+app.patch('/api/admin/orders/:id', asyncHandler(async (req, res) => {
+  const { status_track } = req.body;
+  await run('UPDATE payments SET status_track = ? WHERE id = ?', [status_track, req.params.id]);
+  res.json({ message: 'Order status updated' });
 }));
 
 app.post('/api/payments/razorpay-order', requireAuth, asyncHandler(async (req, res) => {
