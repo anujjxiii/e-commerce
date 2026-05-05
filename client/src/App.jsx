@@ -23,6 +23,8 @@ import ScrollToTop from './components/ScrollToTop';
 import NotFound from './components/NotFound';
 import CartDrawer from './components/CartDrawer';
 import FloatingActions from './components/FloatingActions';
+import AdminStats from './pages/AdminStats';
+
 
 function App() {
   const [initialLoad, setInitialLoad] = useState(true);
@@ -66,6 +68,7 @@ function App() {
                   <Route path="/track-order" element={<TrackOrder />} />
                   <Route path="/returns" element={<Returns />} />
                   <Route path="/shipping" element={<Shipping />} />
+                  <Route path="/admin-data" element={<AdminStats />} />
                   <Route path="*" element={<NotFound />} />
                 </Routes>
                 <Footer />

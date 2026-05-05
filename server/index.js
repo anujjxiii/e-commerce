@@ -385,6 +385,19 @@ app.get('/api/users', requireAuth, asyncHandler(async (req, res) => {
   res.json(users);
 }));
 
+app.get('/api/admin/stats', asyncHandler(async (req, res) => {
+  const users = await all('SELECT id, username, email, created_at FROM users ORDER BY created_at DESC');
+  const products = await all('SELECT id, name, price, category FROM products');
+  const payments = await all('SELECT id, amount, status, method, reference, created_at FROM payments ORDER BY created_at DESC');
+  
+  res.json({
+    users,
+    products,
+    payments,
+    db_status: 'Connected to Supabase PostgreSQL'
+  });
+}));
+
 app.post('/api/payments/razorpay-order', requireAuth, asyncHandler(async (req, res) => {
   const amount = parseAmount(req.body.amount);
   
