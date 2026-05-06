@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link, useLocation, useSearchParams, useNavigate } from 'react-router-dom';
-import { ShoppingBag, User as UserIcon, Search, Heart, X, Menu } from 'lucide-react';
+import { ShoppingBag, User as UserIcon, Heart, X, Menu } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import { useWishlist } from '../context/WishlistContext';
 import { useUser } from '../context/UserContext';
@@ -15,18 +15,7 @@ const Navbar = () => {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [isSearchFocused, setIsSearchFocused] = useState(false);
-  const [localSearch, setLocalSearch] = useState(searchParams.get('search') || '');
   const [loadingProgress, setLoadingProgress] = useState(0);
-  const [suggestions, setSuggestions] = useState([]);
-
-  // Sync local search with URL ONLY when searchParams change from outside (like back button)
-  useEffect(() => {
-    const urlSearch = searchParams.get('search') || '';
-    if (urlSearch !== localSearch) {
-      setLocalSearch(urlSearch);
-    }
-  }, [searchParams]);
 
   // Loading Bar Logic
   useEffect(() => {
@@ -39,56 +28,12 @@ const Navbar = () => {
     };
   }, [location.pathname]);
 
-  // Autocomplete Logic
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      if (localSearch && localSearch.length >= 2) {
-        api.get(`/products?search=${localSearch}`)
-          .then(res => setSuggestions(res.data.slice(0, 5)))
-          .catch(console.error);
-      } else {
-        setSuggestions([]);
-      }
-    }, 300);
-
-    return () => clearTimeout(timer);
-  }, [localSearch]);
-
   const firstName = (user?.username || 'Customer').split(' ')[0].toUpperCase();
 
   // Close menu on route change
   useEffect(() => {
     setIsMenuOpen(false);
   }, [location.pathname]);
-
-  const handleSearchChange = (e) => {
-    setLocalSearch(e.target.value);
-  };
-
-  const handleSearchSubmit = (e) => {
-    if (e) e.preventDefault();
-    if (location.pathname !== '/') {
-      navigate(localSearch ? `/?search=${encodeURIComponent(localSearch)}` : '/');
-    } else {
-      const params = Object.fromEntries(searchParams.entries());
-      if (localSearch) params.search = localSearch;
-      else delete params.search;
-      setSearchParams(params);
-    }
-    setIsSearchFocused(false);
-  };
-
-  const clearSearch = () => {
-    setLocalSearch('');
-    if (location.pathname !== '/') {
-      navigate('/');
-      return;
-    }
-
-    const nextParams = new URLSearchParams(searchParams);
-    nextParams.delete('search');
-    setSearchParams(nextParams);
-  };
 
   return (
     <header style={{ position: 'sticky', top: 0, zIndex: 1000, background: 'var(--bg-primary)' }}>
@@ -131,52 +76,10 @@ const Navbar = () => {
             </Link>
           </div>
 
-          {/* Desktop Search Bar - Hidden on Mobile */}
-          <form onSubmit={handleSearchSubmit} className={`search-pill ${isSearchFocused ? 'focused' : ''}`} style={{ background: 'var(--ss-light-grey)' }}>
-            <div style={{ display: 'flex', alignItems: 'center', paddingLeft: '5px' }}>
-              <Search size={18} color={isSearchFocused ? "var(--text-primary)" : "#888"} />
-            </div>
-            <input
-              type="text"
-              name="global_search"
-              autoComplete="off"
-              spellCheck="false"
-              value={localSearch}
-              onChange={handleSearchChange}
-              onFocus={() => setIsSearchFocused(true)}
-              onBlur={() => setTimeout(() => setIsSearchFocused(false), 200)}
-              placeholder="Search for products..."
-              style={{ background: 'none', border: 'none', outline: 'none', width: '100%', fontSize: '13px', fontWeight: '500', color: 'var(--text-primary)' }}
-            />
-            {localSearch && (
-              <button type="button" className="icon-button-plain" onClick={clearSearch} aria-label="Clear search">
-                <X size={17} color="var(--text-primary)" />
-              </button>
-            )}
+          {/* Desktop Search Bar Removed */}
+          <div style={{ flex: 1 }} />
 
-            {/* Search Suggestions Dropdown */}
-            {isSearchFocused && suggestions.length > 0 && (
-              <div className="search-suggestions">
-                {suggestions.map(p => (
-                  <Link
-                    key={p.id}
-                    to={`/product/${p.id}`}
-                    className="suggestion-item"
-                    onClick={() => {
-                      setSuggestions([]);
-                      setIsSearchFocused(false);
-                    }}
-                  >
-                    <img src={p.image || FALLBACK_IMAGE} alt={p.name} />
-                    <div>
-                      <p className="suggestion-name">{p.name}</p>
-                      <p className="suggestion-price">{formatPrice(p.price)}</p>
-                    </div>
-                  </Link>
-                ))}
-              </div>
-            )}
-          </div>
+          <div style={{ flex: 1 }} />
 
           {/* Right Icons row */}
           <div className="nav-icons" style={{ color: 'var(--text-primary)' }}>
@@ -225,17 +128,7 @@ const Navbar = () => {
           <Link to="/track-order">TRACK ORDER</Link>
         </div>
 
-        {/* Search in Mobile Menu - Moved to bottom */}
-        <form onSubmit={handleSearchSubmit} className="search-pill" style={{ display: 'flex', marginTop: 'auto', padding: '12px 24px', flex: 'none', width: '100%', minWidth: 'auto', height: '48px' }}>
-          <Search size={18} color="#888" />
-          <input
-            type="text"
-            value={localSearch}
-            onChange={handleSearchChange}
-            placeholder="Search products..."
-            style={{ background: 'none', border: 'none', outline: 'none', width: '100%', fontSize: '14px', marginLeft: '10px' }}
-          />
-        </form>
+        <div style={{ height: '20px' }} />
       </div>
     </header>
   );
